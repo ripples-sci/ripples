@@ -6,8 +6,8 @@ authors:
   - given-names: Álvaro
     family-names: Cátedra Sánchez
     email: alvaro.catedra.sanchez@gmail.com
-repository-code: "https://github.com/Alvaro-Catedra-Sanchez/ripples"
-url: "https://github.com/Alvaro-Catedra-Sanchez/ripples"
+repository-code: "https://github.com/ripples-sci/ripples"
+url: "https://github.com/ripples-sci/ripples"
 license: Apache-2.0
 version: 0.1.0
-date-released: "2026-05-30"
+date-released: "2026-06-01"
