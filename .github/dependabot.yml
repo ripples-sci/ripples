@@ -1,0 +1,30 @@
+# Opens small, reviewable pull request on a schedule to keep dependencies and
+# the pinned GitHub Actions current, so neither silently rots between releases.
+#
+# Docs: https://docs.github.com/code-security/dependabot/dependabot-version-updates
+
+version: 2
+
+updates:
+  # GitHub Actions referenced by the CI and publish workflows
+  # (actions/checkout, actions/setup-python, actions/upload-artifact,
+  # actions/download-artifact, pypa/gh-action-pypi-publish).
+  - package-ecosystem: "github-actions"
+    directory: "/"
+    schedule:
+      interval: "weekly"
+    commit-message:
+      prefix: "ci"
+    labels:
+      - "dependencies"
+
+  # Python dependencies declared in pyproject.toml (runtime + the test,
+  # lint, build, docs, and dev extras). Monthly to keep the noise low.
+  - package-ecosystem: "pip"
+    directory: "/"
+    schedule:
+      interval: "monthly"
+    commit-message:
+      prefix: "deps"
+    labels:
+      - "dependencies"

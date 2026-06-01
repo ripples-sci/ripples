@@ -1,0 +1,13 @@
+cff-version: 1.2.0
+title: "Ripples: a scientific computation library"
+message: "If you use this software, please cite it as below."
+type: software
+authors:
+  - given-names: Álvaro
+    family-names: Cátedra Sánchez
+    email: alvaro.catedra.sanchez@gmail.com
+repository-code: "https://github.com/Alvaro-Catedra-Sanchez/ripples"
+url: "https://github.com/Alvaro-Catedra-Sanchez/ripples"
+license: Apache-2.0
+version: 0.1.0
+date-released: "2026-05-30"

@@ -1,0 +1,10 @@
+# Runtime dependencies of `ripples`, in a format readable by `pip
+# install -r requirements.txt`. Kept as a thin mirror of the
+# `[project].dependencies` block in `pyproject.toml` so that tools
+# expecting this file keep working out of the box.
+#
+# The canonical source of truth is `pyproject.toml`. If you add or
+# remove a dependency, update BOTH files (and `requirements-dev.txt`
+# if it is a development dependency).
+
+numpy>=1.24

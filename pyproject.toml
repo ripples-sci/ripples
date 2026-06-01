@@ -1,0 +1,289 @@
+# Single source of truth for the build system, the package metadata
+# (PEP 621), the runtime and optional dependencies, and the
+# configuration of the development tooling. The companion `setup.py` at the
+# repository root is kept minimal and exists only for legacy
+# `pip install -e .` flows; every value that matters lives below.
+#
+# Whenever a value also appears in another file (the README badge, a CI
+# workflow, the docs sidebar), the source of truth is THIS file: update
+# here first.
+
+
+
+# -----------------------------------------------------------------------------
+# Build system
+# -----------------------------------------------------------------------------
+# PEP 517 / PEP 518. Declares the build front-end (`setuptools`) used by
+# `pip install .`, `python -m build`, and the `publish.yml` workflow.
+
+[build-system]
+requires = ["setuptools>=77.0.3", "wheel"]
+build-backend = "setuptools.build_meta"
+
+
+
+# -----------------------------------------------------------------------------
+# Project metadata (PEP 621)
+# -----------------------------------------------------------------------------
+# Static metadata read by PyPI, by `pip show ripples-sci`, and by every CI
+# workflow that needs the package name or version.
+
+[project]
+name = "ripples-sci"
+dynamic = ["version"]
+description = "A scientific computation library that aims to provide a unified, numerically accurate, and readable framework for numerical differentiation, optimization, and more."
+readme = "README.md"
+requires-python = ">=3.10"
+license = "Apache-2.0"
+license-files = ["LICENSE.txt"]
+
+authors = [
+    { name = "Álvaro Cátedra Sánchez", email = "alvaro.catedra.sanchez@gmail.com" },
+]
+maintainers = [
+    { name = "Álvaro Cátedra Sánchez", email = "alvaro.catedra.sanchez@gmail.com" },
+]
+
+keywords = [
+    "scientific-computing",
+    "numerical-analysis",
+    "numerical-differentiation",
+    "finite-differences",
+    "complex-step",
+    "richardson-extrapolation",
+    "optimization",
+    "nonlinear-optimization",
+    "constrained-optimization",
+    "global-optimization",
+    "bfgs",
+    "lbfgs",
+    "trust-region",
+    "conjugate-gradient",
+    "dual-annealing",
+    "direct",
+    "hessian",
+    "hessian-vector-product",
+    "machine-learning",
+    "applied-mathematics",
+]
+
+# Trove classifiers indexed by PyPI for search and discovery. The full
+# list lives at https://pypi.org/classifiers/.
+classifiers = [
+    "Development Status :: 3 - Alpha",
+    "Intended Audience :: Developers",
+    "Intended Audience :: Education",
+    "Intended Audience :: Science/Research",
+    "Operating System :: OS Independent",
+    "Operating System :: POSIX :: Linux",
+    "Operating System :: MacOS",
+    "Operating System :: Microsoft :: Windows",
+    "Programming Language :: Python",
+    "Programming Language :: Python :: 3",
+    "Programming Language :: Python :: 3 :: Only",
+    "Programming Language :: Python :: 3.10",
+    "Programming Language :: Python :: 3.11",
+    "Programming Language :: Python :: 3.12",
+    "Programming Language :: Python :: 3.13",
+    "Programming Language :: Python :: Implementation :: CPython",
+    "Topic :: Scientific/Engineering",
+    "Topic :: Scientific/Engineering :: Mathematics",
+    "Topic :: Scientific/Engineering :: Physics",
+    "Topic :: Scientific/Engineering :: Artificial Intelligence",
+    "Topic :: Software Development :: Libraries :: Python Modules",
+]
+
+# Runtime dependencies.
+dependencies = [
+    "numpy>=1.24",
+]
+
+
+
+# -----------------------------------------------------------------------------
+# Optional dependency groups
+# -----------------------------------------------------------------------------
+# Installable with `pip install ripples-sci[<group>]`. Each group is
+# self-contained; `dev` installs everything needed to develop, test, and
+# release the library.
+
+[project.optional-dependencies]
+
+# Dependencies for running the test suite locally and in CI.
+test = [
+    "pytest>=7.0",
+    "pytest-cov>=4.0",
+    "pytest-xdist>=3.0",
+    "hypothesis>=6.0",
+]
+
+# Dependencies for static analysis and formatting.
+lint = [
+    "ruff>=0.4",
+]
+
+
+
+# Dependencies for building and uploading the distribution to PyPI.
+build = [
+    "build>=1.0",
+    "twine>=5.0",
+]
+
+
+
+# Everything needed to develop, test, document, and release the library.
+dev = [
+    "ripples-sci[test,lint,build]",
+    "pre-commit>=3.0",
+]
+
+
+
+# -----------------------------------------------------------------------------
+# Project URLs (PyPI sidebar)
+# -----------------------------------------------------------------------------
+
+[project.urls]
+"Homepage"        = "https://github.com/ripples-sci/ripples"
+"Repository"      = "https://github.com/ripples-sci/ripples"
+"Issues"          = "https://github.com/ripples-sci/ripples/issues"
+"Changelog"       = "https://github.com/ripples-sci/ripples/blob/main/CHANGELOG.md"
+"Source Code"     = "https://github.com/ripples-sci/ripples"
+"Bug Tracker"     = "https://github.com/ripples-sci/ripples/issues"
+"Discussions"     = "https://github.com/ripples-sci/ripples/discussions"
+
+
+
+# -----------------------------------------------------------------------------
+# setuptools configuration
+# -----------------------------------------------------------------------------
+# Tells setuptools to discover the `ripples` package and every subpackage
+# below it. The `tests*` and `docs*` exclusions guarantee that test
+# scripts and documentation sources never end up in the wheel.
+
+[tool.setuptools.packages.find]
+where   = ["."]
+include = ["ripples*"]
+exclude = ["tests*", "docs*"]
+
+
+
+[tool.setuptools.dynamic]
+version = { attr = "ripples.__version__" } # Only one source of truth
+
+
+
+# =============================================================================
+# DEVELOPMENT TOOLING
+# =============================================================================
+# Every tool below is configured here rather than in its own dotfile, so
+# the project has a single place to look for configuration.
+
+
+
+# -----------------------------------------------------------------------------
+# pytest
+# -----------------------------------------------------------------------------
+
+[tool.pytest.ini_options]
+minversion       = "7.0"
+testpaths        = ["ripples"]
+python_files     = ["_test.py", "test_*.py"]
+python_classes   = ["Test*"]
+python_functions = ["*_suite"]
+addopts = [
+    "-ra",                              # short summary of all non-pass outcomes
+    "--strict-markers",                 # unknown markers raise an error
+    "--strict-config",                  # unknown config keys raise an error
+    "--showlocals",                     # show local variables on failure
+    "--tb=short",                       # short traceback format
+]
+filterwarnings = [
+    "error",
+    "ignore::DeprecationWarning:numpy.*",
+    "ignore::UserWarning:ripples.*",   # allow warning within
+]
+markers = [
+    "slow: marks tests as slow (deselect with -m 'not slow')",
+    "benchmark: marks tests as performance benchmarks (deselect with -m 'not benchmark')",
+]
+
+
+
+# -----------------------------------------------------------------------------
+# coverage.py
+# -----------------------------------------------------------------------------
+
+[tool.coverage.run]
+branch = true
+source = ["ripples"]
+omit = [
+    "ripples/_test.py",
+    "ripples/*/_test.py",
+    "ripples/__init__.py",
+]
+
+[tool.coverage.report]
+precision = 2
+show_missing = true
+skip_covered = false
+exclude_lines = [
+    "pragma: no cover",
+    "raise NotImplementedError",
+    "if __name__ == .__main__.:",
+    "if TYPE_CHECKING:",
+]
+
+
+
+# -----------------------------------------------------------------------------
+# ruff (linter + formatter)
+# -----------------------------------------------------------------------------
+
+[tool.ruff]
+line-length    = 80
+target-version = "py310"
+extend-exclude = [".venv", "build", "dist", "docs/_build"]
+
+[tool.ruff.lint]
+select = [
+    "E",       # pycodestyle errors
+    "W",       # pycodestyle warnings
+    "F",       # pyflakes
+    "I",       # isort
+    "N",       # pep8-naming
+    "UP",      # pyupgrade
+    "B",       # flake8-bugbear
+    "C4",      # flake8-comprehensions
+    "SIM",     # flake8-simplify
+    "RUF",     # ruff-specific rules
+    "NPY",     # numpy-specific rules
+]
+ignore = [
+    "E501",    # line length is enforced by the formatter
+    "N803",    # allow lowercase argument names (numpy convention)
+    "N806",    # allow lowercase variable names (numpy convention)
+    "E301",    # this and the following four are for blank lines
+    "E302",
+    "E303",
+    "E305",
+    "E306",
+    "E701",    # compact one-liners like `if stop: break` - intentional
+    "E731",    # small local lambdas (_hvp_func, test helpers) - fine
+    "RUF023",  # __slots__ is grouped-by-meaning with comments, not sorted
+    "SIM102",  # nested ifs kept for readability / inline comments
+    "SIM103",
+    "SIM108",  # explicit if/else kept (often carries explanatory comments)
+    "UP006",   # This and three following are for nags Optional[X] -> X | None
+    "UP007",
+    "UP035",
+    "UP045",
+    "I001",    # Import order, first stdlib
+    "B904",    # Raise inside Except is deliberate to provide better traceback
+    "RUF022",  # keep __all__ with its own order, like RUF023 for __slots__
+]
+
+[tool.ruff.lint.per-file-ignores]
+"**/_test.py"     = ["B", "SIM"]        # tests are allowed to be verbose
+"**/__init__.py"  = ["F401", "F403"]    # re-exports are intentional

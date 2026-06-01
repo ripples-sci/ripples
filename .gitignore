@@ -1,0 +1,87 @@
+# =============================================================================
+# .gitignore for ripples (ripples-sci)
+# =============================================================================
+# Keeps the repository to source + metadata only. What ends up in the PyPI
+# distribution is controlled separately by MANIFEST.in and the setuptools
+# config in pyproject.toml, not by this file.
+
+
+# -----------------------------------------------------------------------------
+# Byte-compiled / cached Python
+# -----------------------------------------------------------------------------
+__pycache__/
+*.py[cod]
+*$py.class
+*.so
+
+
+# -----------------------------------------------------------------------------
+# Distribution / packaging (produced by `python -m build`, `pip install`, etc.)
+# -----------------------------------------------------------------------------
+build/
+dist/
+sdist/
+wheels/
+*.egg
+*.egg-info/
+.eggs/
+pip-wheel-metadata/
+MANIFEST            # the generated file; not MANIFEST.in, which is tracked
+
+
+# -----------------------------------------------------------------------------
+# Test / coverage / lint caches
+# -----------------------------------------------------------------------------
+.pytest_cache/
+.cache/
+.hypothesis/
+.coverage
+.coverage.*
+coverage.xml
+htmlcov/
+.tox/
+.nox/
+.ruff_cache/
+.mypy_cache/        # harmless to keep even though mypy is disabled
+
+
+# -----------------------------------------------------------------------------
+# Virtual environments
+# -----------------------------------------------------------------------------
+.venv/
+venv/
+env/
+ENV/
+.python-version
+
+
+# -----------------------------------------------------------------------------
+# Editors / IDEs
+# -----------------------------------------------------------------------------
+.vscode/
+.idea/
+*.swp
+*.swo
+*~
+
+
+# -----------------------------------------------------------------------------
+# Operating system files
+# -----------------------------------------------------------------------------
+# Windows
+Thumbs.db
+ehthumbs.db
+Desktop.ini
+$RECYCLE.BIN/
+# macOS
+.DS_Store
+# Linux
+*~
+
+
+# -----------------------------------------------------------------------------
+# Environment / secrets / logs
+# -----------------------------------------------------------------------------
+.env
+.env.*
+*.log

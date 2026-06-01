@@ -1,0 +1,44 @@
+# Controls which non-Python files are included in the source
+# distribution (`.tar.gz`) built by `python -m build`. Python files
+# inside the `ripples` package are already picked up by the
+# `[tool.setuptools.packages.find]` block in `pyproject.toml`; this
+# file is only about the auxiliary content (README, LICENSE, type
+# stubs, ...).
+#
+# Reference: https://packaging.python.org/en/latest/guides/using-manifest-in/
+
+
+
+# Top-level project files. These are visible in the sdist root and
+# referenced from PyPI / GitHub.
+include README.md
+include LICENSE.txt
+include CHANGELOG.md
+include pyproject.toml
+include NOTICE
+
+
+
+# Pull in every Python source file under the package, including the
+# private modules and the per-submodule test scripts.
+recursive-include ripples *.py
+recursive-include ripples *.pyi
+
+
+
+# Hard exclusions. Anything matching these globs is stripped from both
+# the sdist and the wheel regardless of the rules above.
+global-exclude __pycache__
+global-exclude *.py[cod]
+global-exclude *$py.class
+global-exclude *.so
+global-exclude .DS_Store
+global-exclude .git*
+global-exclude .mypy_cache
+global-exclude .ruff_cache
+global-exclude .pytest_cache
+global-exclude .coverage
+global-exclude *.egg-info
+prune build
+prune dist
+prune .github

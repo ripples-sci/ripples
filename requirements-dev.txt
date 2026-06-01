@@ -1,0 +1,43 @@
+# Development dependencies for `ripples`. Mirrors the union of the
+# `test`, `lint`, `docs`, and `build` optional groups in
+# `pyproject.toml`, plus `pre-commit`, so a contributor can bring a
+# fresh checkout to a fully-working dev state with one command:
+#
+#     pip install -r requirements-dev.txt
+#
+# Equivalent to:
+#
+#     pip install -e .[dev]
+#
+# The canonical source of truth is `pyproject.toml`. If you add or
+# remove a development dependency, update BOTH files.
+
+
+
+# Include the runtime requirements so a single `pip install -r
+# requirements-dev.txt` brings everything in.
+-r requirements.txt
+
+
+
+# Testing.
+pytest>=7.0
+pytest-cov>=4.0
+pytest-xdist>=3.0
+hypothesis>=6.0
+
+
+
+# Static analysis and formatting.
+ruff>=0.4
+
+
+
+# Building and uploading distributions.
+build>=1.0
+twine>=5.0
+
+
+
+# Pre-commit hooks. See `.pre-commit-config.yaml` for the hook list.
+pre-commit>=3.0

@@ -1,0 +1,52 @@
+Ripples
+Copyright 2026 Álvaro Cátedra Sánchez
+
+This product is developed and maintained by Álvaro Cátedra Sánchez
+<alvaro.catedra.sanchez@gmail.com> as the sole author.
+
+Licensed under the Apache License, Version 2.0 (the "License"); you may
+not use this software except in compliance with the License. You may
+obtain a copy of the License at:
+
+    http://www.apache.org/licenses/LICENSE-2.0
+
+Unless required by applicable law or agreed to in writing, software
+distributed under the License is distributed on an "AS IS" BASIS,
+WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+See the LICENSE.txt file distributed with this software for the full
+terms governing permissions and limitations under the License.
+
+Proper attribution to the original author must be preserved in all
+copies or substantial portions of this software.
+
+
+================================================================================
+Third-Party Acknowledgments
+================================================================================
+
+This software is built on top of, and was informed by, the following
+open-source projects. These projects are NOT redistributed as part of
+Ripples; they are external dependencies and/or references.
+
+--------------------------------------------------------------------------------
+NumPy  (https://numpy.org/)
+--------------------------------------------------------------------------------
+Ripples depends on NumPy at runtime. NumPy is distributed under the
+3-Clause BSD License. NumPy is not bundled with Ripples; it is installed
+separately as a declared dependency.
+
+--------------------------------------------------------------------------------
+SciPy  (https://scipy.org/)
+--------------------------------------------------------------------------------
+The Wolfe line-search routines in ripples.optimization were
+informed by the reference implementation in SciPy
+(scipy.optimize._linesearch). SciPy is distributed under the 3-Clause
+BSD License:
+
+    Copyright (c) 2001-2002 Enthought, Inc. 2003, SciPy Developers.
+    All rights reserved.
+
+If any portion of the SciPy source was adapted into this project rather
+than reimplemented from first principles, the full SciPy 3-Clause BSD
+License text and the copyright notice above must be retained and
+distributed alongside this NOTICE (for example, in a LICENSES/ directory).
