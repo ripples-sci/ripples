@@ -37,4 +37,4 @@ Initial public release.
     conversion helpers (`as_array`, `as_float`, `to_list`, `to_dict`),
     equality (`==`, `allclose`), and a `summary` method.
 
-[0.1.0]: https://github.com/Alvaro-Catedra-Sanchez/ripples/releases/tag/v0.1.0
+[0.1.0]: https://github.com/ripples-sci/ripples/releases/tag/v0.1.0
