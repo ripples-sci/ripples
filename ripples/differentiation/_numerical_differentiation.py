@@ -445,10 +445,11 @@ def _central_difference_coefficients(
 
     References
     ----------
-    [1] Section 1 from Randall J. LeVeque (2007).
+    [1] Randall J. LeVeque (2007).
         **Finite Difference Methods for Ordinary and Partial Differential
         Equations: Steady-State and Time-Dependent Problems**
         SIAM (Society for Industrial and Applied Mathematics).
+        Chapter 1.
         https://doi.org/10.1137/1.9780898717839
     """
 
@@ -871,10 +872,11 @@ def _estimate_truncation_error_constant(
 
     References
     ----------
-    [1] Section 1 from Randall J. LeVeque (2007).
+    [1] Randall J. LeVeque (2007).
         **Finite Difference Methods for Ordinary and Partial Differential
         Equations: Steady-State and Time-Dependent Problems**
         SIAM (Society for Industrial and Applied Mathematics).
+        Chapter 1.
         https://doi.org/10.1137/1.9780898717839
     """
 
@@ -1048,10 +1050,11 @@ def _auto_step_size(
 
     References
     ----------
-    [1] Section 5.7 from William H. Press, Saul A. Teukolsky, William T.
-        Vetterling & Brian P. Flannery (2007).
+    [1] William H. Press, Saul A. Teukolsky, William T. Vetterling &
+        Brian P. Flannery (2007).
         **Numerical Recipes: The Art of Scientific Computing, 3rd edition.**
         Cambridge University Press.
+        Section 5.7.
         ISBN: 978-0-521-88068-8.
     """
 
@@ -1196,20 +1199,22 @@ def _evaluate_component_central_difference(
 
     References
     ----------
-    [1] Section 5.7 from William H. Press, Saul A. Teukolsky, William T.
-        Vetterling & Brian P. Flannery (2007).
+    [1] William H. Press, Saul A. Teukolsky, William T. Vetterling &
+        Brian P. Flannery (2007).
         **Numerical Recipes: The Art of Scientific Computing, 3rd edition.**
         Cambridge University Press.
+        Section 5.7.
         ISBN: 978-0-521-88068-8.
 
     [2] Wikipedia contributors.
         **Finite Differences.**
         https://en.wikipedia.org/wiki/Finite_difference#Multivariate_finite_differences
 
-    [3] Section 1 from Randall J. LeVeque (2007).
+    [3] Randall J. LeVeque (2007).
         **Finite Difference Methods for Ordinary and Partial Differential
         Equations: Steady-State and Time-Dependent Problems**
         SIAM (Society for Industrial and Applied Mathematics).
+        Chapter 1.
         https://doi.org/10.1137/1.9780898717839
     """
 
@@ -1793,16 +1798,17 @@ def _evaluate_component_richardson(
 
     References
     ----------
-    [1] Sections 4.2 & 4.5 from Richard L. Burden, Douglas J. Faires &
-        Annete M. Burden (2016).
+    [1] Richard L. Burden, Douglas J. Faires & Annete M. Burden (2016).
         **Numerical Analysis, 10th edition.**
         Cengage Learning.
+        Sections 4.2 & 4.5.
         ISBN: 978-1-305-25366-7.
 
-    [2] Section 5.7 from William H. Press, Saul A. Teukolsky,
-        William T. Vetterling & Brian P. Flannery (2007).
+    [2] William H. Press, Saul A. Teukolsky, William T. Vetterling &
+        Brian P. Flannery (2007).
         **Numerical Recipes: The Art of Scientific Computing, 3rd edition.**
         Cambridge University Press.
+        Section 5.7.
         ISBN: 978-0-521-88068-8.
     """
 
@@ -2344,10 +2350,11 @@ def _evaluate_component_dispatcher(
 
     References
     ----------
-    [1] Section 5.7 from William H. Press, Saul A. Teukolsky, William T.
-        Vetterling & Brian P. Flannery (2007).
+    [1] William H. Press, Saul A. Teukolsky, William T. Vetterling &
+        Brian P. Flannery (2007).
         **Numerical Recipes: The Art of Scientific Computing, 3rd edition.**
         Cambridge University Press.
+        Section 5.7.
         ISBN: 978-0-521-88068-8.
     """
 
@@ -3099,16 +3106,18 @@ def nth_numerical_derivative(
 
     References
     ----------
-    [1] Section 1 from Randall J. LeVeque (2007).
+    [1] Randall J. LeVeque (2007).
         **Finite Difference Methods for Ordinary and Partial Differential
         Equations: Steady-State and Time-Dependent Problems.**
         SIAM (Society for Industrial and Applied Mathematics).
+        Chapter 1.
         https://doi.org/10.1137/1.9780898717839
 
-    [2] Section 5.7 from William H. Press, Saul A. Teukolsky, William T.
+    [2] William H. Press, Saul A. Teukolsky, William T.
         Vetterling & Brian P. Flannery (2007).
         **Numerical Recipes: The Art of Scientific Computing, 3rd edition.**
         Cambridge University Press.
+        Section 5.7.
         ISBN: 978-0-521-88068-8.
 
     [3] Martins, J. R. R. A., Sturdza, P., & Alonso, J. J. (2003).
@@ -3116,10 +3125,10 @@ def nth_numerical_derivative(
         ACM Transactions on Mathematical Software, 29(3), 245-262.
         https://doi.org/10.1145/838250.838251
 
-    [4] Sections 4.2 & 4.5 from Richard L. Burden, Douglas J. Faires &
-        Annette M. Burden (2016).
+    [4] Richard L. Burden, Douglas J. Faires & Annette M. Burden (2016).
         **Numerical Analysis, 10th edition.**
         Cengage Learning.
+        Sections 4.2 & 4.5.
         ISBN: 978-1-305-25366-7.
 
     [5] Wikipedia contributors.
@@ -3607,16 +3616,18 @@ def numerical_hessian_vector_product(
 
     References
     ----------
-    [1] Section 1 from Randall J. LeVeque (2007).
+    [1] Randall J. LeVeque (2007).
         **Finite Difference Methods for Ordinary and Partial Differential
         Equations: Steady-State and Time-Dependent Problems.**
         SIAM (Society for Industrial and Applied Mathematics).
+        Chapter 1.
         https://doi.org/10.1137/1.9780898717839
 
-    [2] Section 5.7 from William H. Press, Saul A. Teukolsky, William T.
-        Vetterling & Brian P. Flannery (2007).
+    [2] William H. Press, Saul A. Teukolsky, William T. Vetterling &
+        Brian P. Flannery (2007).
         **Numerical Recipes: The Art of Scientific Computing, 3rd edition.**
         Cambridge University Press.
+        Section 5.7.
         ISBN: 978-0-521-88068-8.
     """
 
