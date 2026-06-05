@@ -377,21 +377,21 @@ files. Each one notes the methods that rely on it.
 
 ## 4.1 - Differentiation
 
-1. **Press, W. H., Teukolsky, S. A., Vetterling, W. T., & Flannery, B. P. (2007).** *Numerical Recipes: The Art of Scientific Computing* (3rd ed.), §5.7. Cambridge University Press. ISBN 978-0-521-88068-8. - Central-difference stencils and the Romberg-style truncation error estimate.
+1. **Press, W. H., Teukolsky, S. A., Vetterling, W. T., & Flannery, B. P. (2007).** *Numerical Recipes: The Art of Scientific Computing* (3rd ed.). Section 5.7. Cambridge University Press. ISBN 978-0-521-88068-8. - Central-difference stencils and the Romberg-style truncation error estimate.
 
-2. **LeVeque, R. J. (2007).** *Finite Difference Methods for Ordinary and Partial Differential Equations: Steady-State and Time-Dependent Problems*, §1. SIAM. [https://doi.org/10.1137/1.9780898717839](https://doi.org/10.1137/1.9780898717839) - Finite-difference foundations and the Hessian-vector product.
+2. **LeVeque, R. J. (2007).** *Finite Difference Methods for Ordinary and Partial Differential Equations: Steady-State and Time-Dependent Problems*. Chapter 1. SIAM. [https://doi.org/10.1137/1.9780898717839](https://doi.org/10.1137/1.9780898717839) - Finite-difference foundations and the Hessian-vector product.
 
 3. **Martins, J. R. R. A., Sturdza, P., & Alonso, J. J. (2003).** *The complex-step derivative approximation.* ACM Transactions on Mathematical Software, 29(3), 245–262. [https://doi.org/10.1145/838250.838251](https://doi.org/10.1145/838250.838251) - The complex-step method.
 
-4. **Burden, R. L., Faires, J. D., & Burden, A. M. (2016).** *Numerical Analysis* (10th ed.), §§4.2 & 4.5. Cengage Learning. ISBN 978-1-305-25366-7. - Richardson extrapolation and the automatic step-size selection.
+4. **Burden, R. L., Faires, J. D., & Burden, A. M. (2016).** *Numerical Analysis* (10th ed.). Sections 4.2 & 4.5. Cengage Learning. ISBN 978-1-305-25366-7. - Richardson extrapolation and the automatic step-size selection.
 
 5. **Wikipedia contributors.** *Finite differences.* [https://en.wikipedia.org/wiki/Finite_difference#Multivariate_finite_differences](https://en.wikipedia.org/wiki/Finite_difference#Multivariate_finite_differences) - Multivariate (mixed-partial) finite-difference composition.
 
 ## 4.2 - Optimization
 
-1. **Nocedal, J., & Wright, S. J. (2006).** *Numerical Optimization* (2nd ed.). Springer Series in Operations Research and Financial Engineering. Springer, New York. [https://doi.org/10.1007/978-0-387-40065-5](https://doi.org/10.1007/978-0-387-40065-5) - Conjugate gradient (§5.4, eq. 5.45), BFGS (§6.1, eqs. 6.19–6.20), Newton-CG (§7.1), L-BFGS (§7.4–7.5), trust-region NCG (§7.2), trust-region Lanczos (pp. 175–176, Theorem 4.1, §4.3), and the augmented-Lagrangian outer loop (§17.3–17.4).
+1. **Nocedal, J., & Wright, S. J. (2006).** *Numerical Optimization* (2nd ed.). Springer Series in Operations Research and Financial Engineering. Springer, New York. [https://doi.org/10.1007/978-0-387-40065-5](https://doi.org/10.1007/978-0-387-40065-5) - Conjugate gradient (section 5.4, equation 5.45), BFGS (section 6.1, equations 6.19–6.20), Newton-CG (section 7.1), L-BFGS (sections 7.4–7.5), trust-region NCG (section 7.2), trust-region Lanczos (pages 175–176, theorem 4.1, section 4.3), and the augmented-Lagrangian outer loop (sections 17.3–17.4).
 
-2. **Kochenderfer, M. J., & Wheeler, T. A. (2019).** *Algorithms for Optimization.* MIT Press. ISBN 978-0-262-03942-0. - Nesterov accelerated gradient (§5.4), Adam (§5.8), DIRECT (§7.6), and dual annealing (§8.3).
+2. **Kochenderfer, M. J., & Wheeler, T. A. (2019).** *Algorithms for Optimization.* MIT Press. ISBN 978-0-262-03942-0. - Nesterov accelerated gradient (section 5.4), Adam (section 5.8), DIRECT (section 7.6), and dual annealing (section 8.3).
 
 3. **SciPy contributors (2026).** *SciPy.optimize._linesearch.py source code (Version 1.17.1).* GitHub. [Source](https://github.com/scipy/scipy/blob/bb6b9da396f15355efdb2e28bdfa1aead105ce92/scipy/optimize/_linesearch.py) - Wolfe line search.
 
