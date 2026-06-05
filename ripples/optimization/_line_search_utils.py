@@ -103,15 +103,16 @@ def _cubic_polynomial_minimizer(
 
     References
     ----------
-    [1] Pages 57-59 from Nocedal, J., & Wright, S. J. (2006).
+    [1] Nocedal, J., & Wright, S. J. (2006).
         *Numerical Optimization* (2nd ed.).
         Springer Series in Operations Research and Financial Engineering.
         Springer, New York.
+        Pages 57-59.
         https://doi.org/10.1007/978-0-387-40065-5
 
     [2] SciPy contributors (2026).
         SciPy.optimize._linesearch.py source code (Version 1.17.1).
-        GitHub
+        GitHub.
         https://github.com/scipy/scipy/blob/bb6b9da396f15355efdb2e28bdfa1aead105ce92/scipy/optimize/_linesearch.py
     """
 
@@ -197,15 +198,16 @@ def _quadratic_polynomial_minimizer(
 
     References
     ----------
-    [1] Pages 57-59 from Nocedal, J., & Wright, S. J. (2006).
+    [1] Nocedal, J., & Wright, S. J. (2006).
         *Numerical Optimization* (2nd ed.).
         Springer Series in Operations Research and Financial Engineering.
         Springer, New York.
+        Pages 57-59.
         https://doi.org/10.1007/978-0-387-40065-5
 
     [2] SciPy contributors (2026).
         SciPy.optimize._linesearch.py source code (Version 1.17.1).
-        GitHub
+        GitHub.
         https://github.com/scipy/scipy/blob/bb6b9da396f15355efdb2e28bdfa1aead105ce92/scipy/optimize/_linesearch.py
     """
 

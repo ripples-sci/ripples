@@ -313,10 +313,18 @@ def _augmented_lagrangian_optimizer(
 
     References
     ----------
+<<<<<<< HEAD
+    [1] Nocedal, J., & Wright, S. J. (2006).
+        **Numerical Optimization** (2nd ed.).
+        Springer Series in Operations Research and Financial Engineering.
+        Springer, New York.
+        Sections 17.3 & 17.4.
+=======
     [1] Chapter 17.3 & 17.4 from Nocedal, J., & Wright, S. J. (2006).
         **Numerical Optimization** (2nd ed.).
         Springer Series in Operations Research and Financial Engineering.
         Springer, New York.
+>>>>>>> 0b31c1bcc1ea81f3b19c9862cfe05a99490d7882
         https://doi.org/10.1007/978-0-387-40065-5
     """
 

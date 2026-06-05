@@ -121,9 +121,10 @@ def _direct_optimizer(
 
     References
     ----------
-    [1] Chapter 7.6 from Kochenderfer, M. J., & Wheeler, T. A. (2019).
+    [1] Kochenderfer, M. J., & Wheeler, T. A. (2019).
         **Algorithms for Optimization**.
         MIT Press.
+        Section 7.6.
         ISBN: 978-0-262-03942-0
     """
 
@@ -539,9 +540,10 @@ def _direct_optimizer(
 
             References
             ----------
-            [1] Part 7.6 from Kochenderfer, M. J., & Wheeler, T. A. (2019).
+            [1] Kochenderfer, M. J., & Wheeler, T. A. (2019).
                 **Algorithms for Optimization**.
                 MIT Press.
+                Section 7.6.
                 ISBN: 978-0-262-03942-0
             """
 
@@ -1019,9 +1021,10 @@ def _annealing_optimizer(
         Computational Optimization in Engineering - Paradigms and applications.
         http://dx.doi.org/10.5772/66071
 
-    [3] Chapter 8.3 from Kochenderfer, M. J., & Wheeler, T. A. (2019).
+    [3] Kochenderfer, M. J., & Wheeler, T. A. (2019).
         **Algorithms for Optimization**.
         MIT Press.
+        Section 8.3.
         ISBN: 978-0-262-03942-0
 
     [4] Wikipedia contributors.

@@ -144,9 +144,10 @@ def _nesterov_optimizer(
 
     References
     ----------
-    [1] Chapter 5.4 from Kochenderfer, M. J., & Wheeler, T. A. (2019).
+    [1] Kochenderfer, M. J., & Wheeler, T. A. (2019).
         **Algorithms for Optimization**.
         MIT Press.
+        Section 5.4.
         ISBN: 978-0-262-03942-0
     """
 
@@ -369,9 +370,10 @@ def _adam_optimizer(
 
     References
     ----------
-    [1] Chapter 5.8 from Kochenderfer, M. J., & Wheeler, T. A. (2019).
+    [1] Kochenderfer, M. J., & Wheeler, T. A. (2019).
         **Algorithms for Optimization**.
         MIT Press.
+        Section 5.8.
         ISBN: 978-0-262-03942-0
     """
 

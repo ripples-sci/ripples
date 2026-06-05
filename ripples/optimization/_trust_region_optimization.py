@@ -209,10 +209,11 @@ def _solve_trust_region_subproblem_cg(
 
     References
     ----------
-    [1] Algorithm 7.2 from Nocedal, J., & Wright, S. J. (2006).
+    [1] Nocedal, J., & Wright, S. J. (2006).
         **Numerical Optimization** (2nd ed.).
         Springer Series in Operations Research and Financial Engineering.
         Springer, New York.
+        Algorithm 7.2.
         https://doi.org/10.1007/978-0-387-40065-5
     """
 
@@ -981,11 +982,11 @@ def _solve_trust_region_subproblem_lanczos(
         SIAM Journal on Optimization, 9(2), 504-525.
         https://doi.org/10.1137/S1052623497322735
 
-    [2] Pages 175-176 & Theorem 4.1 & Chapter 4.3 from
-        Nocedal, J., & Wright, S. J. (2006).
+    [2] Nocedal, J., & Wright, S. J. (2006).
         **Numerical Optimization** (2nd ed.).
         Springer Series in Operations Research and Financial Engineering.
         Springer, New York.
+        Pages 175-176, Theorem 4.1 & Section 4.3.
         https://doi.org/10.1007/978-0-387-40065-5
     """
 
@@ -1304,10 +1305,11 @@ def _trust_region_optimizer(
 
     References
     ----------
-    [1] Algorithm 4.1 from Nocedal, J., & Wright, S. J. (2006).
+    [1] Nocedal, J., & Wright, S. J. (2006).
         **Numerical Optimization** (2nd ed.).
         Springer Series in Operations Research and Financial Engineering.
         Springer, New York.
+        Algorithm 4.1.
         https://doi.org/10.1007/978-0-387-40065-5
     """
 

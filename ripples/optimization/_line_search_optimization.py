@@ -193,15 +193,16 @@ def _line_search_wolfe(
 
     References
     ----------
-    [1] Algorithm 3.5 from Nocedal, J., & Wright, S. J. (2006).
+    [1] Nocedal, J., & Wright, S. J. (2006).
         *Numerical Optimization* (2nd ed.).
         Springer Series in Operations Research and Financial Engineering.
         Springer, New York.
+        Algorithm 3.5.
         https://doi.org/10.1007/978-0-387-40065-5
 
     [2] SciPy contributors (2026).
         SciPy.optimize._linesearch.py source code (Version 1.17.1).
-        GitHub
+        GitHub.
         https://github.com/scipy/scipy/blob/bb6b9da396f15355efdb2e28bdfa1aead105ce92/scipy/optimize/_linesearch.py
     """
 
@@ -410,15 +411,16 @@ def _zoom(
 
     References
     ----------
-    [1] Algorithm 3.6 from Nocedal, J., & Wright, S. J. (2006).
+    [1] Nocedal, J., & Wright, S. J. (2006).
         *Numerical Optimization* (2nd ed.).
         Springer Series in Operations Research and Financial Engineering.
         Springer, New York.
+        Algorithm 3.6.
         https://doi.org/10.1007/978-0-387-40065-5
 
     [2] SciPy contributors (2026).
         SciPy.optimize._linesearch.py source code (Version 1.17.1).
-        GitHub
+        GitHub.
         https://github.com/scipy/scipy/blob/bb6b9da396f15355efdb2e28bdfa1aead105ce92/scipy/optimize/_linesearch.py
     """
 
@@ -762,10 +764,11 @@ def _conjugate_gradient_optimizer(
 
     References
     ----------
-    [1] Algorithm 5.4 with update 5.45 from Nocedal, J., & Wright, S. J. (2006).
+    [1] Nocedal, J., & Wright, S. J. (2006).
         **Numerical Optimization** (2nd ed.).
         Springer Series in Operations Research and Financial Engineering.
         Springer, New York.
+        Algorithm 5.4 with update 5.45.
         https://doi.org/10.1007/978-0-387-40065-5
 
     [2] Wikipedia contributors.
@@ -1241,10 +1244,11 @@ def _solve_newton_system_cg(
 
     References
     ----------
-    [1] Algorithm 7.1 from Nocedal, J., & Wright, S. J. (2006).
+    [1] Nocedal, J., & Wright, S. J. (2006).
         **Numerical Optimization** (2nd ed.).
         Springer Series in Operations Research and Financial Engineering.
         Springer, New York.
+        Algorithm 7.1.
         https://doi.org/10.1007/978-0-387-40065-5
     """
 
@@ -1407,10 +1411,11 @@ def _newton_cg_optimizer(
 
     References
     ----------
-    [1] Algorithm 7.1 from Nocedal, J., & Wright, S. J. (2006).
+    [1] Nocedal, J., & Wright, S. J. (2006).
         **Numerical Optimization** (2nd ed.).
         Springer Series in Operations Research and Financial Engineering.
         Springer, New York.
+        Algorithm 7.1.
         https://doi.org/10.1007/978-0-387-40065-5
     """
 
@@ -1889,11 +1894,11 @@ def _bfgs_optimizer(
 
     References
     ----------
-    [1] Algorithm 6.1 & eqs. 6.19, 6.20 from Nocedal, J., & Wright, S. J.
-        (2006).
+    [1] Nocedal, J., & Wright, S. J. (2006).
         **Numerical Optimization** (2nd ed.).
         Springer Series in Operations Research and Financial Engineering.
         Springer, New York.
+        Algorithm 6.1 & eqs. 6.19, 6.20.
         https://doi.org/10.1007/978-0-387-40065-5
 
     [2] Hessian update from Wikipedia contributors.
@@ -2332,10 +2337,11 @@ def _lbfgs_optimizer(
 
     References
     ----------
-    [1] Algorithms 7.4 and 7.5 from Nocedal, J., & Wright, S. J. (2006).
+    [1] Nocedal, J., & Wright, S. J. (2006).
         **Numerical Optimization** (2nd ed.).
         Springer Series in Operations Research and Financial Engineering.
         Springer, New York.
+        Algorithms 7.4 and 7.5.
         https://doi.org/10.1007/978-0-387-40065-5
 
     [2] Wikipedia contributors.
