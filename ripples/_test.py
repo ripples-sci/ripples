@@ -1,34 +1,30 @@
 """
 Installation-integrity tests for `ripples`, and the unified test dispatcher.
 
-This script does not re-test the numerical machinery - the differentiation and
-optimization suites own that. Its job is the layer below: to prove that the
-package the user actually installed is whole and wired correctly. A wheel can
-import cleanly and still be broken - a re-export pointing at the wrong object, a
-metadata field dropped during packaging, a NumPy too old for the code that
-relies on it, a submodule whose test script never made it into the
-distribution. Every section here checks one such property, so that a green run
-means "what landed on this machine is the library, intact" before any feature
-test is trusted.
+This script does tests the package the user actually installed as a whole and
+that is interconected correctly.
+
+A wheel can import cleanly and still be broken - a re-export pointing at the
+wrong object, a metadata field dropped during packaging, a NumPy too old for
+the code that relies on it, a submodule whose test script never made it into the
+distribution.
 
 It exercises, in reading order:
 
 - Package import and the public metadata (`__version__`, author, licence).
-- The runtime environment against the documented floors (Python, NumPy).
-- The public API surface, the `__all__` declaration, and the curated `__dir__`.
+- The runtime environment (Python, NumPy).
+- The public API surface, the `__all__` declaration, and `__dir__`.
 - Submodule reachability and the identity of every top-level re-export.
 - The bundled per-submodule test scripts and the unified `test()` entry point.
 - A minimal end-to-end smoke call of each public function on the installed
-  package - loose tolerances, since the point is "it runs and lands in the
-  right place", not "it is accurate to the last digit".
+package.
 
 
 The dispatcher
 --------------
-`test()` is the single front door named in the README and in both submodule
-suites. It routes to the installation checks here, to one submodule suite, or
-to everything at once, folding the per-suite tallies into one combined summary
-in the last case.
+`test()` is the intended way to call this module, as stated in the README and
+in both submodule suites. It routes to the installation checks here, to one
+submodule suite, or to everything at once.
 
 
 Output convention
@@ -100,16 +96,15 @@ SEPARATOR_WIDTH = 79
 _CURRENT_SECTION_TEST_NUMBER = 0
 
 
-# Kept here as the one place the environment checks read so a bump in the
-# requirements is a one-line edit rather than a hunt through the assertions.
+
 MINIMUM_PYTHON_VERSION = (3, 10)
 MINIMUM_NUMPY_VERSION = (1, 24)
 
 
 # The public surface. Every name here must be reachable from `import ripples`,
 # and nothing private should leak alongside it. It mirrors the `__all__`
-# assembled in ripples/__init__.py, on purpose - the test exists precisely to
-# catch the day the two drift apart.
+# in ripples/__init__.py, on purpose - the test exists precisely to catch the
+# day the two drift apart.
 EXPECTED_SUBMODULES = (
     "differentiation",
     "optimization",
@@ -123,10 +118,7 @@ EXPECTED_PUBLIC_FUNCTIONS = (
     "OptimizationResult",
 )
 
-# The unified test entry point, re-exported at the top level from this module.
-# It is part of the public surface - the README documents `ripples.test(...)` -
-# so the import checks hold the package to its presence the same as any other
-# advertised name.
+# The unified test entry point.
 EXPECTED_DISPATCHER = (
     "test",
 )
@@ -179,6 +171,8 @@ class Reporter:
         self.skipped: int = 0
         self.info: int = 0
         self.failure_records: List[Tuple[str, str, Any, Any]] = []
+        self.verbose: bool = True
+        self._writer: Optional[_StdoutProxy] = None
 
     def reset(self) -> None:
         """
@@ -206,10 +200,15 @@ class Reporter:
     ) -> None:
         self.failed += 1
         self.failure_records.append((test_name, message, expected, actual))
+
         print(f"  VERDICT     : FAIL - {message}")
+
         if expected is not None or actual is not None:
             print(f"                expected = {expected!r}")
             print(f"                actual   = {actual!r}")
+
+        if not self.verbose and self._writer is not None:
+            self._writer.mark_failed()
 
     def record_skip(self, test_name: str, reason: str) -> None:
         self.skipped += 1
@@ -222,8 +221,8 @@ class Reporter:
 
     def print_summary(self) -> None:
         """Print the end-of-run accounting and replay each failure."""
-
         total_tests = self.passed + self.failed + self.skipped
+
         print()
         print("=" * SEPARATOR_WIDTH)
         print(" FINAL SUMMARY ".center(SEPARATOR_WIDTH, "="))
@@ -241,10 +240,60 @@ class Reporter:
                 print()
                 print(f"  [{test_name}]")
                 print(f"    {message}")
+
                 if expected is not None or actual is not None:
                     print(f"    expected = {expected!r}")
                     print(f"    actual   = {actual!r}")
+
         print("=" * SEPARATOR_WIDTH)
+
+
+
+class _StdoutProxy:
+    """
+    stdout proxy used in quiet mode.
+
+    It buffers everything written for the current test and, at each boundary
+    (the next `test_block`, or the end of `run()`), either flushes that buffer
+    to the real stream - when the test recorded a failure - or discards it. The
+    final summary is written straight through, because `run()` restores the
+    real stream before printing it.
+    """
+
+    def __init__(
+        self, real_stream: Any, label: Optional[str] = None
+    ) -> None:
+        self._real_stream = real_stream
+        self._buffer: List[str] = []
+        self._current_test_failed = False
+        self._label = label
+        self._label_emitted = False
+
+    def write(self, text: str) -> int:
+        self._buffer.append(text)
+        return len(text)
+
+    def flush(self) -> None:
+        self._real_stream.flush()
+
+    def mark_failed(self) -> None:
+        """Flag the in-progress test so its buffered output is kept."""
+        self._current_test_failed = True
+
+    def commit(self) -> None:
+        """Flush the current test's buffer if it failed, else discard it."""
+        if self._current_test_failed:
+            if self._label is not None and not self._label_emitted:
+                self._real_stream.write(
+                    "\n" + f" {self._label} ".center(SEPARATOR_WIDTH, "=")
+                    + "\n"
+                )
+                self._label_emitted = True
+            self._real_stream.write("".join(self._buffer))
+            self._real_stream.flush()
+
+        self._buffer.clear()
+        self._current_test_failed = False
 
 
 
@@ -261,7 +310,12 @@ def section_banner(section_title: str) -> None:
     counter so the next `test_block` starts again at "Test 1".
     """
     global _CURRENT_SECTION_TEST_NUMBER
+
     _CURRENT_SECTION_TEST_NUMBER = 0
+
+    if not REPORT.verbose:
+        return
+
     print()
     print(f"# {section_title} ")
     print("#" * SEPARATOR_WIDTH)
@@ -276,17 +330,17 @@ def test_block(test_name: str, description: str) -> None:
 
         Section <n>, Test <m>: s<n>.<rest> - <description>
 
-    where <n> is the section number (the section letter prefixing
-    `test_name`, mapped A -> 1 ... F -> 6), <m> is the position of this
-    test within the current section (reset by `section_banner`), and <rest>
-    is whatever follows the section letter. The VERDICT line is appended
+    where <n> is the integer section number prefixing `test_name`, <m> is
+    the position of this test within the current section (reset by
+    `section_banner`), and <rest> is whatever follows that number. The
+    VERDICT line is appended
     afterwards by whichever `check_*` helper the test calls.
 
     Parameters
     ----------
     test_name : str
-        The dotted identifier, beginning with its section letter, e.g.
-        "C.surface.public_functions_present". The same string is handed to
+        The dotted identifier, beginning with its section number, e.g.
+        "3.surface.public_functions_present". The same string is handed to
         the `check_*` helpers, so a failure in the summary traces back here.
     description : str
         A single sentence stating what the test verifies and why it
@@ -294,9 +348,14 @@ def test_block(test_name: str, description: str) -> None:
     """
     global _CURRENT_SECTION_TEST_NUMBER
 
-    section_letter, _, name_remainder = test_name.partition(".")
-    section_number = ord(section_letter.upper()) - ord("A") + 1
+    if not REPORT.verbose and REPORT._writer is not None:
+        REPORT._writer.commit()
+
+    section_number_text, _, name_remainder = test_name.partition(".")
+    section_number = int(section_number_text)
+
     _CURRENT_SECTION_TEST_NUMBER += 1
+
     numbered_name = f"s{section_number}.{name_remainder}"
 
     print()
@@ -313,8 +372,10 @@ def _format_for_result_line(value: Any) -> str:
     if isinstance(value, np.ndarray):
         with np.printoptions(precision=6, suppress=False, linewidth=200):
             return np.array2string(value)
+
     if isinstance(value, float):
         return f"{value:.6e}"
+
     return repr(value)
 
 
@@ -368,12 +429,14 @@ def check_allclose(
             "actual value matches the expected one within the tolerance band."
         )
         REPORT.record_pass(test_name, message)
+
     else:
         REPORT.record_fail(
             test_name,
             interpretation or "value disagrees beyond the tolerance band.",
             expected=expected_value, actual=actual_value,
         )
+
     return is_close
 
 
@@ -389,11 +452,13 @@ def check_truth(
     print(f"  RESULT      : condition evaluated to {bool(condition)}")
     if condition:
         REPORT.record_pass(test_name, message_on_pass)
+
         return True
 
     REPORT.record_fail(
         test_name, message_on_fail, expected=True, actual=bool(condition)
     )
+
     return False
 
 
@@ -416,11 +481,13 @@ def check_raises(
     except expected_exception_type as raised_exception:
         print(f"  RESULT      : raised {type(raised_exception).__name__}: "
               f"{raised_exception}")
+
         REPORT.record_pass(
             test_name,
             interpretation
             or f"call raised {expected_exception_type.__name__} as expected.",
         )
+
         return True
 
     except BaseException as wrong_exception:
@@ -431,6 +498,7 @@ def check_raises(
             expected=expected_exception_type.__name__,
             actual=type(wrong_exception).__name__,
         )
+
         return False
 
     REPORT.record_fail(
@@ -439,16 +507,12 @@ def check_raises(
         expected=expected_exception_type.__name__,
         actual="<no exception>",
     )
+
     return False
 
 
 
-# ENVIRONMENT PROBES
-#
-# Two tiny parsers shared by the environment section. Both read the leading
-# numeric release segment of a version - "1.24.3rc1" -> (1, 24, 3) - and
-# ignore any pre-release or local suffix, since the requirement floors are
-# expressed only in terms of the release numbers.
+# ENVIRONMENT TEST
 
 
 
@@ -457,6 +521,7 @@ def _release_tuple(version_string: str) -> Tuple[int, ...]:
     leading_match = re.match(r"\d+(?:\.\d+)*", version_string.strip())
     if leading_match is None:
         return ()
+
     return tuple(int(part) for part in leading_match.group(0).split("."))
 
 
@@ -466,29 +531,23 @@ def _format_version(version_tuple: Tuple[int, ...]) -> str:
 
 
 
-# SECTION A - PACKAGE IMPORT AND METADATA
-#
-# The first thing any install has to do is import. The second is identify
-# itself: the version and the authorship/licence fields are what PyPI, pip, and
-# any downstream tooling read, and a packaging slip that drops one of them is
-# invisible until something asks for it. This section imports the package and
-# confirms every metadata field is present, a non-empty string, and - for the
-# version - shaped like a release number.
+# SECTION 1 - PACKAGE IMPORT AND METADATA
 
 
 
-def section_a_import_and_metadata() -> None:
+def section_01_import_and_metadata() -> None:
     """
     Import `ripples`, then confirm `__version__` parses as a dotted release
     number and that the author, e-mail, licence, and copyright fields are all
     present non-empty strings.
     """
 
-    section_banner("SECTION A - Package import and metadata")
+    section_banner("SECTION 1 - Package import and metadata")
+
 
     # the import itself
     test_block(
-        test_name="A.import.package",
+        test_name="1.import.package",
         description=(
             "verify `import ripples` succeeds, importing the top-level package "
             "and checking the module object comes back; nothing else in the "
@@ -496,17 +555,20 @@ def section_a_import_and_metadata() -> None:
             "every later test depends on."
         ),
     )
+
     import ripples
+
     check_truth(
-        test_name="A.import.package",
+        test_name="1.import.package",
         condition=ripples is not None,
         message_on_pass="the top-level package imported.",
         message_on_fail="the import produced no module object.",
     )
 
+
     # version is a release-shaped string
     test_block(
-        test_name="A.metadata.version_is_release_shaped",
+        test_name="1.metadata.version_is_release_shaped",
         description=(
             "verify `__version__` is a non-empty string whose leading segment "
             "parses as a dotted release number, reading the attribute and "
@@ -515,13 +577,15 @@ def section_a_import_and_metadata() -> None:
             "is a release blocker."
         ),
     )
+
     version_string = getattr(ripples, "__version__", None)
     version_is_release_shaped = (
         isinstance(version_string, str)
         and re.match(r"^\d+\.\d+", version_string.strip()) is not None
     )
+
     check_truth(
-        test_name="A.metadata.version_is_release_shaped",
+        test_name="1.metadata.version_is_release_shaped",
         condition=version_is_release_shaped,
         message_on_pass=f"__version__ is {version_string!r}.",
         message_on_fail=(
@@ -530,17 +594,19 @@ def section_a_import_and_metadata() -> None:
         ),
     )
 
-    # the remaining metadata fields
-    # Derived from EXPECTED_METADATA minus __version__ (handled separately
-    # above with its own release-shape check), so adding a new metadata field
-    # to EXPECTED_METADATA is enough; the loop below picks it up on its own.
+
+    # the remaining metadata fields derived from EXPECTED_METADATA minus
+    # __version__ (handled separately above with its own release-shape check),
+    # so adding a new metadata field to EXPECTED_METADATA is enough; the loop
+    # below picks it up on its own.
     descriptive_metadata = tuple(
         metadata_name for metadata_name in EXPECTED_METADATA
         if metadata_name != "__version__"
     )
+
     for metadata_name in descriptive_metadata:
         test_block(
-            test_name=f"A.metadata.{metadata_name.strip('_')}",
+            test_name=f"1.metadata.{metadata_name.strip('_')}",
             description=(
                 f"verify `{metadata_name}` is present as a non-empty string, "
                 f"reading the attribute off the package and checking its type "
@@ -549,9 +615,11 @@ def section_a_import_and_metadata() -> None:
                 f"import alone would never reveal."
             ),
         )
+
         metadata_value = getattr(ripples, metadata_name, None)
+
         check_truth(
-            test_name=f"A.metadata.{metadata_name.strip('_')}",
+            test_name=f"1.metadata.{metadata_name.strip('_')}",
             condition=(
                 isinstance(metadata_value, str)
                 and len(metadata_value) > 0
@@ -562,28 +630,22 @@ def section_a_import_and_metadata() -> None:
 
 
 
-# SECTION B - RUNTIME ENVIRONMENT
-#
-# The code is written against documented floors - Python 3.10 for the syntax
-# it uses, NumPy 1.24 for the array API it relies on. pip enforces these at
-# install time from the metadata, but an editable install, a hand-built
-# environment, or a stale wheel can sidestep that. Checking the live
-# interpreter and the imported NumPy here turns a confusing downstream failure
-# ("some attribute does not exist") into a clear up-front verdict.
+# SECTION 2 - RUNTIME ENVIRONMENT
 
 
 
-def section_b_runtime_environment() -> None:
+def section_02_runtime_environment() -> None:
     """
     Compare the running Python and the imported NumPy against the documented
     minimums, reporting both the found and the required version on each block.
     """
 
-    section_banner("SECTION B - Runtime environment")
+    section_banner("SECTION 2 - Runtime environment")
+
 
     # Python
     test_block(
-        test_name="B.environment.python_version",
+        test_name="2.environment.python_version",
         description=(
             "verify the running interpreter meets the documented Python floor, "
             "comparing sys.version_info against the required minimum; the code "
@@ -591,20 +653,24 @@ def section_b_runtime_environment() -> None:
             "fails in ways that have nothing to do with the library's logic."
         ),
     )
+
     running_python_version = sys.version_info[: len(MINIMUM_PYTHON_VERSION)]
+
     print(f"  RESULT      : found Python "
           f"{_format_version(tuple(running_python_version))}, "
           f"require >= {_format_version(MINIMUM_PYTHON_VERSION)}")
+
     check_truth(
-        test_name="B.environment.python_version",
+        test_name="2.environment.python_version",
         condition=tuple(running_python_version) >= MINIMUM_PYTHON_VERSION,
         message_on_pass="interpreter satisfies the documented floor.",
         message_on_fail="interpreter is older than the documented floor.",
     )
 
+
     # NumPy
     test_block(
-        test_name="B.environment.numpy_version",
+        test_name="2.environment.numpy_version",
         description=(
             "verify the imported NumPy meets the documented floor, parsing "
             "numpy.__version__ and comparing against the required minimum; the "
@@ -612,14 +678,17 @@ def section_b_runtime_environment() -> None:
             "the most likely source of a subtle array-API mismatch."
         ),
     )
+
     installed_numpy_version = _release_tuple(np.__version__)
     comparable_numpy_version = installed_numpy_version[
         : len(MINIMUM_NUMPY_VERSION)
     ]
+
     print(f"  RESULT      : found NumPy {np.__version__}, "
           f"require >= {_format_version(MINIMUM_NUMPY_VERSION)}")
+
     check_truth(
-        test_name="B.environment.numpy_version",
+        test_name="2.environment.numpy_version",
         condition=comparable_numpy_version >= MINIMUM_NUMPY_VERSION,
         message_on_pass="NumPy satisfies the documented floor.",
         message_on_fail="NumPy is older than the documented floor.",
@@ -627,37 +696,34 @@ def section_b_runtime_environment() -> None:
 
 
 
-# SECTION C - PUBLIC API SURFACE
+# SECTION 3 - PUBLIC API SURFACE
 #
-# The promise of the package is that `import ripples` is enough to reach every
-# feature. That promise is held together by three things: the names being
-# present, the `__all__` declaration agreeing with what is actually exported,
-# and the curated `__dir__` showing the user the public surface and nothing
-# else. A break in any of them is silent - the code still works, but the
-# advertised interface no longer matches reality.
+# `import ripples` is enough to reach every feature.
 
 
 
-def section_c_public_api_surface() -> None:
+def section_03_public_api_surface() -> None:
     """
     Confirm every documented submodule, public function, and metadata name is
     reachable from the package; that `__all__` is the union of the three and
-    contains no dangling name; and that `dir(ripples)` returns exactly the
+    contains no unbounded name; and that `dir(ripples)` returns exactly the
     sorted `__all__`.
     """
 
-    section_banner("SECTION C - Public API surface")
+    section_banner("SECTION 3 - Public API surface")
 
     import ripples
 
-    # every advertised name is present
+
+    # every name is present
     expected_public_names = (
         EXPECTED_SUBMODULES + EXPECTED_PUBLIC_FUNCTIONS
         + EXPECTED_DISPATCHER + EXPECTED_METADATA
     )
+
     for public_name in expected_public_names:
         test_block(
-            test_name=f"C.present.{public_name.strip('_')}",
+            test_name=f"3.present.{public_name.strip('_')}",
             description=(
                 f"verify `ripples.{public_name}` resolves, looking the name up "
                 f"on the package; this is one entry of the advertised surface, "
@@ -665,17 +731,19 @@ def section_c_public_api_surface() -> None:
                 f"is broken for that feature."
             ),
         )
+
         check_truth(
-            test_name=f"C.present.{public_name.strip('_')}",
+            test_name=f"3.present.{public_name.strip('_')}",
             condition=hasattr(ripples, public_name),
             message_on_pass=f"ripples.{public_name} is reachable.",
             message_on_fail=f"ripples.{public_name} is absent.",
         )
 
+
     # the documented callables / classes are actually callable
     for callable_name in EXPECTED_PUBLIC_FUNCTIONS + EXPECTED_DISPATCHER:
         test_block(
-            test_name=f"C.callable.{callable_name}",
+            test_name=f"3.callable.{callable_name}",
             description=(
                 f"verify `ripples.{callable_name}` is callable, fetching the "
                 f"object and checking callable(); a name that resolves to a "
@@ -684,17 +752,20 @@ def section_c_public_api_surface() -> None:
                 f"tried to use it."
             ),
         )
+
         candidate = getattr(ripples, callable_name, None)
+
         check_truth(
-            test_name=f"C.callable.{callable_name}",
+            test_name=f"3.callable.{callable_name}",
             condition=callable(candidate),
             message_on_pass=f"{callable_name} is callable.",
             message_on_fail=f"{callable_name} resolved to a non-callable.",
         )
 
+
     # __all__ is well-formed and complete
     test_block(
-        test_name="C.dunder_all.union",
+        test_name="3.dunder_all.union",
         description=(
             "verify `__all__` is a list holding exactly the union of the "
             "documented submodules, public functions, and metadata, comparing "
@@ -703,23 +774,27 @@ def section_c_public_api_surface() -> None:
             "when it exists on the package."
         ),
     )
+
     package_all = getattr(ripples, "__all__", None)
     all_matches_expected = (
         isinstance(package_all, list)
         and set(package_all) == set(expected_public_names)
     )
+
     print(f"  RESULT      : __all__ has {len(package_all or [])} entries; "
           f"expected {len(expected_public_names)}")
+
     check_truth(
-        test_name="C.dunder_all.union",
+        test_name="3.dunder_all.union",
         condition=all_matches_expected,
         message_on_pass="__all__ is exactly the documented public surface.",
         message_on_fail="__all__ diverges from the documented public surface.",
     )
 
-    # no name in __all__ dangles
+
+    # no name in __all__ is unbound
     test_block(
-        test_name="C.dunder_all.no_dangling_name",
+        test_name="3.dunder_all.no_unbound_name",
         description=(
             "verify every name listed in `__all__` actually resolves on the "
             "package, looking each one up; a name advertised but not bound "
@@ -728,19 +803,22 @@ def section_c_public_api_surface() -> None:
             "user."
         ),
     )
-    dangling_names = [
+
+    unbounded_names = [
         name for name in (package_all or []) if not hasattr(ripples, name)
     ]
+
     check_truth(
-        test_name="C.dunder_all.no_dangling_name",
-        condition=len(dangling_names) == 0,
+        test_name="3.dunder_all.no_unbounded_name",
+        condition=len(unbounded_names) == 0,
         message_on_pass="every __all__ entry is bound on the package.",
-        message_on_fail=f"__all__ lists unbound names: {dangling_names}.",
+        message_on_fail=f"__all__ lists unbound names: {unbounded_names}.",
     )
+
 
     # __dir__ is the sorted __all__
     test_block(
-        test_name="C.dunder_dir.equals_sorted_all",
+        test_name="3.dunder_dir.equals_sorted_all",
         description=(
             "verify `dir(ripples)` equals the sorted `__all__`, calling dir() "
             "and comparing; the package defines a custom __dir__ so that tab-"
@@ -750,7 +828,7 @@ def section_c_public_api_surface() -> None:
     )
     directory_listing = dir(ripples)
     check_truth(
-        test_name="C.dunder_dir.equals_sorted_all",
+        test_name="3.dunder_dir.equals_sorted_all",
         condition=directory_listing == sorted(package_all or []),
         message_on_pass="dir(ripples) is the curated, sorted public surface.",
         message_on_fail="dir(ripples) no longer matches sorted(__all__).",
@@ -758,37 +836,29 @@ def section_c_public_api_surface() -> None:
 
 
 
-# SECTION D - SUBMODULE REACHABILITY AND RE-EXPORT IDENTITY
-#
-# Each public function is defined deep inside a submodule and re-exported at
-# the top level. The re-export is plumbing, and plumbing leaks: a refactor can
-# leave `ripples.minimizer` pointing at a stale object while
-# `ripples.optimization.minimizer` points at the live one, and both still
-# import. The identity check (`is`) is the only thing that catches that - two
-# different objects with the same name behave identically right up until they
-# don't.
+# SECTION 4 - SUBMODULE REACHABILITY AND RE-EXPORT IDENTITY
 
 
 
-def section_d_submodule_reexport_identity() -> None:
+def section_04_submodule_reexport_identity() -> None:
     """
     Import each submodule directly, confirm it carries its own `__all__`, and
     confirm every top-level public function is the very same object as the
     attribute it was re-exported from.
     """
 
-    section_banner("SECTION D - Submodule reachability and re-export identity")
+    section_banner("SECTION 4 - Submodule reachability and re-export identity")
 
     import ripples
 
-    # each submodule imports on its own-
-    # The submodule objects are stashed in a dict here so the identity loop
-    # below can iterate them without re-importing - one import per submodule
-    # is enough.
+
+    # each submodule imports on its own, the submodule objects are stashed in a
+    # dict here so the identity loop below can iterate them without
+    # re-importing - one import per submodule is enough.
     imported_submodule_objects: Dict[str, Any] = {}
     for submodule_name in EXPECTED_SUBMODULES:
         test_block(
-            test_name=f"D.import.{submodule_name}",
+            test_name=f"4.import.{submodule_name}",
             description=(
                 f"verify `ripples.{submodule_name}` imports as a submodule, "
                 f"importing it directly and checking it exposes its own "
@@ -797,11 +867,13 @@ def section_d_submodule_reexport_identity() -> None:
                 f"later failures at once."
             ),
         )
+
         imported_submodule_objects[submodule_name] = importlib.import_module(
             f"ripples.{submodule_name}"
         )
+
         check_truth(
-            test_name=f"D.import.{submodule_name}",
+            test_name=f"4.import.{submodule_name}",
             condition=hasattr(
                 imported_submodule_objects[submodule_name], "__all__"
             ),
@@ -813,15 +885,8 @@ def section_d_submodule_reexport_identity() -> None:
             ),
         )
 
+
     # top-level re-exports are the same objects
-    #
-    # The library's stated invariant is that every public entry point reaches
-    # the top level, so what is in a submodule's `__all__` must be re-exported
-    # at `ripples.<name>` and must be the same object. The loop discovers the
-    # names by reading each submodule's `__all__` rather than hardcoding a
-    # function-to-submodule map; a new public name added to a submodule and
-    # re-exported needs no edit here, and a name added to the submodule but
-    # forgotten at the top level fails this check rather than slipping through.
     for submodule_name, submodule_object in imported_submodule_objects.items():
         submodule_public_names = getattr(submodule_object, "__all__", None)
         if not submodule_public_names:
@@ -831,7 +896,7 @@ def section_d_submodule_reexport_identity() -> None:
 
         for public_name in submodule_public_names:
             test_block(
-                test_name=f"D.identity.{public_name}",
+                test_name=f"4.identity.{public_name}",
                 description=(
                     f"verify `ripples.{public_name}` is the very object "
                     f"exported by ripples.{submodule_name}, comparing the two "
@@ -840,10 +905,13 @@ def section_d_submodule_reexport_identity() -> None:
                     f"actually proves the re-export wiring is live."
                 ),
             )
+
             top_level_object = getattr(ripples, public_name, None)
+
             origin_object = getattr(submodule_object, public_name, None)
+
             check_truth(
-                test_name=f"D.identity.{public_name}",
+                test_name=f"4.identity.{public_name}",
                 condition=top_level_object is origin_object
                 and top_level_object is not None,
                 message_on_pass=(
@@ -857,9 +925,10 @@ def section_d_submodule_reexport_identity() -> None:
                 ),
             )
 
+
     # a phantom submodule does not resolve
     test_block(
-        test_name="D.no_phantom_submodule",
+        test_name="4.no_phantom_submodule",
         description=(
             "verify importing a submodule that does not exist raises "
             "ModuleNotFoundError, attempting `ripples.does_not_exist` and "
@@ -868,8 +937,9 @@ def section_d_submodule_reexport_identity() -> None:
             "caller's typo."
         ),
     )
+
     check_raises(
-        test_name="D.no_phantom_submodule",
+        test_name="4.no_phantom_submodule",
         callable_object=lambda: importlib.import_module(
             "ripples.does_not_exist"
         ),
@@ -878,18 +948,11 @@ def section_d_submodule_reexport_identity() -> None:
 
 
 
-# SECTION E - BUNDLED TEST SUITES AND THE UNIFIED ENTRY POINT
-#
-# The per-submodule test scripts are shipped inside the wheel (the MANIFEST and
-# the setuptools config pull every .py under the package in), and the unified
-# `test()` dispatcher in this module is the front door the README points the
-# user at. This section proves both are reachable and correctly shaped, without
-# running them - executing the full submodule suites is what `test("all")`
-# does, and duplicating that here would only slow the installation gate down.
+# SECTION 5 - BUNDLED TEST SUITES AND THE UNIFIED ENTRY POINT
 
 
 
-def section_e_test_suite_wiring() -> None:
+def section_05_test_suite_wiring() -> None:
     """
     Confirm each submodule ships a `_test` module exposing the `run` callable
     the dispatcher drives, that this module's own `test` dispatcher is callable,
@@ -898,15 +961,16 @@ def section_e_test_suite_wiring() -> None:
     """
 
     section_banner(
-        "SECTION E - Bundled test suites and the unified entry point"
+        "SECTION 5 - Bundled test suites and the unified entry point"
     )
 
     import ripples
 
+
     # each submodule's _test ships and exposes run()
     for submodule_name in EXPECTED_SUBMODULES:
         test_block(
-            test_name=f"E.suite.{submodule_name}_run_callable",
+            test_name=f"5.suite.{submodule_name}_run_callable",
             description=(
                 f"verify ripples.{submodule_name}._test ships and exposes a "
                 f"callable `run`, importing the test module and checking the "
@@ -919,7 +983,7 @@ def section_e_test_suite_wiring() -> None:
             f"ripples.{submodule_name}._test"
         )
         check_truth(
-            test_name=f"E.suite.{submodule_name}_run_callable",
+            test_name=f"5.suite.{submodule_name}_run_callable",
             condition=callable(getattr(submodule_test, "run", None)),
             message_on_pass=(
                 f"ripples.{submodule_name}._test.run is present and callable."
@@ -930,9 +994,10 @@ def section_e_test_suite_wiring() -> None:
             ),
         )
 
+
     # the dispatcher in this module is callable
     test_block(
-        test_name="E.dispatcher.callable",
+        test_name="5.dispatcher.callable",
         description=(
             "verify the `test` dispatcher defined in this module is callable, "
             "checking the local object; it is the single front door every "
@@ -942,15 +1007,16 @@ def section_e_test_suite_wiring() -> None:
         ),
     )
     check_truth(
-        test_name="E.dispatcher.callable",
+        test_name="5.dispatcher.callable",
         condition=callable(test),
         message_on_pass="the unified test() dispatcher is callable.",
         message_on_fail="the unified test() dispatcher is not callable.",
     )
 
+
     # the dispatcher rejects an unknown target
     test_block(
-        test_name="E.dispatcher.rejects_unknown_target",
+        test_name="5.dispatcher.rejects_unknown_target",
         description=(
             "verify `test(\"non-existant\")` raises ValueError, calling the "
             "dispatcher with a target it does not recognise and catching; a "
@@ -960,14 +1026,15 @@ def section_e_test_suite_wiring() -> None:
         ),
     )
     check_raises(
-        test_name="E.dispatcher.rejects_unknown_target",
+        test_name="5.dispatcher.rejects_unknown_target",
         callable_object=lambda: test("non-existant"),
         expected_exception_type=ValueError,
     )
 
+
     # the dispatcher rejects a non-string target
     test_block(
-        test_name="E.dispatcher.rejects_non_string_target",
+        test_name="5.dispatcher.rejects_non_string_target",
         description=(
             "verify `test(None)` raises TypeError, calling the dispatcher with "
             "a non-string target and catching; the library raises TypeError "
@@ -977,14 +1044,15 @@ def section_e_test_suite_wiring() -> None:
         ),
     )
     check_raises(
-        test_name="E.dispatcher.rejects_non_string_target",
+        test_name="5.dispatcher.rejects_non_string_target",
         callable_object=lambda: test(None),  # type: ignore[arg-type]
         expected_exception_type=TypeError,
     )
 
+
     # test() is exposed at the top level and is this dispatcher
     test_block(
-        test_name="E.dispatcher.exposed_at_top_level",
+        test_name="5.dispatcher.exposed_at_top_level",
         description=(
             "verify `ripples.test` is exposed and is this module's dispatcher, "
             "comparing ripples.test against the local `test` by identity; the "
@@ -994,7 +1062,7 @@ def section_e_test_suite_wiring() -> None:
         ),
     )
     check_truth(
-        test_name="E.dispatcher.exposed_at_top_level",
+        test_name="5.dispatcher.exposed_at_top_level",
         condition=getattr(ripples, "test", None) is test,
         message_on_pass="ripples.test is wired and is the unified dispatcher.",
         message_on_fail=(
@@ -1006,15 +1074,10 @@ def section_e_test_suite_wiring() -> None:
 
 
 
-# SECTION F - END-TO-END SMOKE TEST
+# SECTION 6 - END-TO-END SMOKE TEST
 #
 # Import succeeding and names resolving still does not prove the installed code
-# runs. A broken NumPy build, a corrupted file, an ABI mismatch - these surface
-# only when arithmetic actually happens. So each public entry point is called
-# once on a trivial problem with a known answer, judged on a loose band. This
-# is deliberately not an accuracy test - the submodule suites own that, with
-# tolerances down to machine epsilon. Here the only question is whether the
-# installed package computes and lands in the right place at all.
+# runs.
 
 
 
@@ -1056,7 +1119,7 @@ def _smoke_identity_gradient(point: Any) -> np.ndarray:
     return np.asarray(point, dtype=float)
 
 
-def section_f_end_to_end_smoke() -> None:
+def section_06_end_to_end_smoke() -> None:
     """
     Call each public entry point once on a trivial known-answer problem -
     the first derivative of sin at 0, the minimiser of a convex bowl, and a
@@ -1065,13 +1128,14 @@ def section_f_end_to_end_smoke() -> None:
     documented wrapper type.
     """
 
-    section_banner("SECTION F - End-to-end smoke test")
+    section_banner("SECTION 6 - End-to-end smoke test")
 
     import ripples
 
+
     # differentiation: d/dx sin(x) at 0 is 1
     test_block(
-        test_name="F.smoke.first_derivative",
+        test_name="6.smoke.first_derivative",
         description=(
             "verify nth_numerical_derivative computes d/dx sin(x) at 0 as 1, "
             "passing the 1-D sine taking a one-element point array and "
@@ -1081,20 +1145,24 @@ def section_f_end_to_end_smoke() -> None:
             "compute, however cleanly it imported."
         ),
     )
+
     first_derivative_callable = ripples.nth_numerical_derivative(
         _smoke_sine_of_first_coordinate, derivative_order=1,
     )
+
     first_derivative_result = first_derivative_callable(np.array([0.0]))
+
     check_allclose(
-        test_name="F.smoke.first_derivative",
+        test_name="6.smoke.first_derivative",
         actual_value=float(first_derivative_result.as_float()),
         expected_value=1.0,
         relative_tolerance=1e-4, absolute_tolerance=1e-6,
         interpretation="the differentiation path runs and is correct here.",
     )
 
+
     test_block(
-        test_name="F.smoke.differentiation_result_type",
+        test_name="6.smoke.differentiation_result_type",
         description=(
             "verify the differentiation call returns a DifferentiationResult, "
             "checking the wrapper type of the value just produced; the "
@@ -1103,8 +1171,9 @@ def section_f_end_to_end_smoke() -> None:
             "that expect the wrapper's metadata."
         ),
     )
+
     check_truth(
-        test_name="F.smoke.differentiation_result_type",
+        test_name="6.smoke.differentiation_result_type",
         condition=isinstance(
             first_derivative_result, ripples.DifferentiationResult
         ),
@@ -1112,9 +1181,10 @@ def section_f_end_to_end_smoke() -> None:
         message_on_fail="the result is not a DifferentiationResult.",
     )
 
+
     # optimization: minimiser of a convex bowl
     test_block(
-        test_name="F.smoke.minimise_bowl",
+        test_name="6.smoke.minimise_bowl",
         description=(
             "verify minimizer locates the minimum (3, -1) of a convex bowl "
             "from the origin with BFGS and the analytical gradient, then check "
@@ -1123,22 +1193,25 @@ def section_f_end_to_end_smoke() -> None:
             "installed solver converges rather than merely imports."
         ),
     )
+
     optimization_result = ripples.minimizer(
         function=_smoke_objective,
         method="bfgs",
         initial_params=[0.0, 0.0],
         gradient_function=_smoke_objective_gradient,
     )
+
     check_allclose(
-        test_name="F.smoke.minimise_bowl",
+        test_name="6.smoke.minimise_bowl",
         actual_value=np.asarray(optimization_result.final_params),
         expected_value=np.array([3.0, -1.0]),
         relative_tolerance=1e-3, absolute_tolerance=1e-3,
         interpretation="the optimization path runs and converges here.",
     )
 
+
     test_block(
-        test_name="F.smoke.optimization_result_type",
+        test_name="6.smoke.optimization_result_type",
         description=(
             "verify the minimiser call returns an OptimizationResult, checking "
             "the wrapper type of the value just produced; the documented "
@@ -1147,8 +1220,9 @@ def section_f_end_to_end_smoke() -> None:
             "package."
         ),
     )
+
     check_truth(
-        test_name="F.smoke.optimization_result_type",
+        test_name="6.smoke.optimization_result_type",
         condition=isinstance(
             optimization_result, ripples.OptimizationResult
         ),
@@ -1156,9 +1230,10 @@ def section_f_end_to_end_smoke() -> None:
         message_on_fail="the result is not an OptimizationResult.",
     )
 
+
     # Hessian-vector product: the gradient is the identity, so H @ v = v
     test_block(
-        test_name="F.smoke.hessian_vector_product",
+        test_name="6.smoke.hessian_vector_product",
         description=(
             "verify numerical_hessian_vector_product returns v unchanged when "
             "given the identity-map gradient (the gradient of "
@@ -1170,19 +1245,120 @@ def section_f_end_to_end_smoke() -> None:
             "Hessian."
         ),
     )
+
     probe_point = np.array([1.0, 2.0, 3.0])
+
     probe_direction = np.array([1.0, 0.0, -2.0])
+
     hessian_vector_result = ripples.numerical_hessian_vector_product(
         _smoke_identity_gradient,
         point=probe_point,
         vector=probe_direction,
     )
+
     check_allclose(
-        test_name="F.smoke.hessian_vector_product",
+        test_name="6.smoke.hessian_vector_product",
         actual_value=np.asarray(hessian_vector_result),
         expected_value=probe_direction,
         relative_tolerance=1e-4, absolute_tolerance=1e-6,
         interpretation="the matrix-free HVP path runs and is correct here.",
+    )
+
+
+
+# SECTION 7 - DISPATCHER TARGET RESOLUTION
+
+
+
+def section_07_dispatcher_target_resolution() -> None:
+    """
+    Drive _canonical_target over every entry in the alias table, including a
+    case-shifted and a whitespace-padded spelling, and confirm the two
+    documented rejections (an unknown target, a non-string target) at the
+    resolver level.
+    """
+
+    section_banner("SECTION 7 - Dispatcher target resolution")
+
+
+    # every documented alias resolves to its canonical key
+    test_block(
+        test_name="7.aliases.resolve_all",
+        description=(
+            "verify every spelling in the alias table resolves to its "
+            "canonical target, walking _TARGET_ALIASES and checking each "
+            "accepted spelling - plus an upper-cased and a whitespace-padded "
+            "variant - maps back to its key; the dispatcher documents these "
+            "alternative spellings and case-insensitivity, so a regression in "
+            "the alias table would silently break a documented call form."
+        ),
+    )
+
+    alias_resolution_failures = []
+    for canonical_name, accepted_spellings in _TARGET_ALIASES.items():
+        for spelling in accepted_spellings:
+            for variant in (spelling, spelling.upper(), f"  {spelling}  "):
+                resolved_target = _canonical_target(variant)
+                if resolved_target != canonical_name:
+                    alias_resolution_failures.append(
+                        (variant, resolved_target, canonical_name)
+                    )
+
+    spellings_checked = sum(
+        len(spellings) for spellings in _TARGET_ALIASES.values()
+    ) * 3
+
+    print(f"  RESULT      : checked {spellings_checked} spellings; "
+          f"{len(alias_resolution_failures)} mismatch(es)")
+
+    check_truth(
+        test_name="7.aliases.resolve_all",
+        condition=len(alias_resolution_failures) == 0,
+        message_on_pass=(
+            "every alias, in any case and with surrounding whitespace, "
+            "resolves to its canonical target."
+        ),
+        message_on_fail=(
+            f"alias resolution mismatches: {alias_resolution_failures[:3]}."
+        ),
+    )
+
+
+    # an unknown target is rejected at the resolver
+    test_block(
+        test_name="7.aliases.unknown_raises_valueerror",
+        description=(
+            "verify _canonical_target raises ValueError on a target outside "
+            "the alias table, passing a spelling that matches nothing and "
+            "catching; this is the resolver-level guarantee behind the "
+            "dispatcher's unknown-target rejection, and it has to fire before "
+            "any suite is selected."
+        ),
+    )
+
+    check_raises(
+        test_name="7.aliases.unknown_raises_valueerror",
+        callable_object=lambda: _canonical_target("not-a-real-target"),
+        expected_exception_type=ValueError,
+    )
+
+
+    # a non-string target is rejected at the resolver
+    test_block(
+        test_name="7.aliases.non_string_raises_typeerror",
+        description=(
+            "verify _canonical_target raises TypeError on a non-string target, "
+            "passing an integer and catching; a clean TypeError here is what "
+            "stops the resolver from calling .strip() on something that has no "
+            "such method and turning a caller's type slip into a confusing "
+            "AttributeError deeper in the call."
+        ),
+    )
+
+    check_raises(
+        test_name="7.aliases.non_string_raises_typeerror",
+        callable_object=lambda: _canonical_target(123), # type: ignore[arg-type]
+        expected_exception_type=TypeError,
     )
 
 
@@ -1197,7 +1373,10 @@ def section_f_end_to_end_smoke() -> None:
 
 
 
-def run(include_benchmarks: bool = True) -> Reporter:
+def run(
+    include_benchmarks: bool = True, verbose: bool = True,
+    show_summary: bool = True, quiet_label: Optional[str] = None,
+) -> Reporter:
     """
     Execute the installation-integrity suite end to end.
 
@@ -1220,63 +1399,78 @@ def run(include_benchmarks: bool = True) -> Reporter:
     # A fresh slate on every call: the module-level reporter is reused, so
     # without this a second run would keep adding to the first run's counts.
     REPORT.reset()
+    REPORT.verbose = verbose
 
-    ordered_sections = [
-        section_a_import_and_metadata,
-        section_b_runtime_environment,
-        section_c_public_api_surface,
-        section_d_submodule_reexport_identity,
-        section_e_test_suite_wiring,
-        section_f_end_to_end_smoke,
-    ]
-
-    print("=" * SEPARATOR_WIDTH)
-    print(
-        " ripples - installation-integrity suite ".center(SEPARATOR_WIDTH, "=")
+    _real_stdout = sys.stdout
+    REPORT._writer = (
+        _StdoutProxy(_real_stdout, label=quiet_label)
+        if not verbose else None
     )
-    print("=" * SEPARATOR_WIDTH)
-    print(
-        "Reading order: each block states what it checks and why it matters, "
-        "then\nprints the RESULT and a VERDICT (pass / fail / info)."
-    )
+    if REPORT._writer is not None:
+        sys.stdout = REPORT._writer
 
-    for section_runner in ordered_sections:
-        try:
-            section_runner()
-        except Exception as section_exception:
-            # An exception escaping a section is itself a failure; record it,
-            # print the traceback, and carry on with the next section so a
-            # single fault cannot abort the whole suite.
-            import traceback
-            REPORT.record_fail(
-                test_name=section_runner.__name__,
-                message=(
-                    f"section raised an unhandled "
-                    f"{type(section_exception).__name__}: "
-                    f"{section_exception}"
-                ),
-            )
-            print()
-            print(" UNCAUGHT EXCEPTION ".center(SEPARATOR_WIDTH, "!"))
-            traceback.print_exc()
-            print("!" * SEPARATOR_WIDTH)
+    try:
+        ordered_sections = [
+            section_01_import_and_metadata,
+            section_02_runtime_environment,
+            section_03_public_api_surface,
+            section_04_submodule_reexport_identity,
+            section_05_test_suite_wiring,
+            section_06_end_to_end_smoke,
+            section_07_dispatcher_target_resolution,
+        ]
 
-    REPORT.print_summary()
+        print("=" * SEPARATOR_WIDTH)
+        print(
+            " ripples - installation-integrity "
+            "suite ".center(SEPARATOR_WIDTH, "=")
+        )
+        print("=" * SEPARATOR_WIDTH)
+        print(
+            "Reading order: each block states what it checks and why it "
+            "matters, then\nprints the RESULT and a VERDICT "
+            "(pass / fail / info)."
+        )
+
+        for section_runner in ordered_sections:
+            try:
+                section_runner()
+
+            except Exception as section_exception:
+                # An exception escaping a section is itself a failure; record
+                # it, print the traceback, and carry on with the next section
+                # so a single fault cannot abort the whole suite.
+                import traceback
+                REPORT.record_fail(
+                    test_name=section_runner.__name__,
+                    message=(
+                        f"section raised an unhandled "
+                        f"{type(section_exception).__name__}: "
+                        f"{section_exception}"
+                    ),
+                )
+                print()
+                print(" UNCAUGHT EXCEPTION ".center(SEPARATOR_WIDTH, "!"))
+
+                traceback.print_exc()
+
+                print("!" * SEPARATOR_WIDTH)
+
+    finally:
+        if REPORT._writer is not None:
+            REPORT._writer.commit()
+            sys.stdout = _real_stdout
+            REPORT._writer = None
+
+
+    if show_summary:
+        REPORT.print_summary()
+
     return REPORT
 
 
 
 # UNIFIED DISPATCHER
-#
-# `test()` is the one front door named in the README and in both submodule
-# suites. It routes to the installation checks above, to a single submodule
-# suite, or to everything at once. In the "all" case it runs each suite in
-# turn - each prints its own report - and then folds the per-suite tallies into
-# one combined summary, so a caller sees both the detail and the grand total.
-#
-# It is re-exported at the top level from ripples/__init__.py (`from ._test
-# import test`, with 'test' listed in the package's public surface), which is
-# what makes `ripples.test(...)` resolve to the function defined here.
 
 
 
@@ -1306,10 +1500,12 @@ def _canonical_target(requested_target: str) -> str:
             f"test target must be a string, got "
             f"{type(requested_target).__name__}: {requested_target!r}."
         )
+
     requested_lower = requested_target.strip().lower()
     for canonical_name, accepted_spellings in _TARGET_ALIASES.items():
         if requested_lower in accepted_spellings:
             return canonical_name
+
     raise ValueError(
         f"unknown test target {requested_target!r}; choose one of "
         f"'installation', 'differentiation', 'optimization', or 'all'."
@@ -1347,7 +1543,7 @@ def _print_combined_summary(
         print("  All suites passed.")
     else:
         print(f"  {total_failed} check(s) failed across all suites; "
-              f"see each suite's own FAILURES block above.")
+              f"see the failing tests listed above.")
     print("=" * SEPARATOR_WIDTH)
 
 
@@ -1356,35 +1552,43 @@ def test(
     which: Literal[
         'installation', 'differentiation', 'optimization', 'all'
     ] = "all",
-    include_benchmarks: bool = True
+    include_benchmarks: bool = True,
+    verbose: bool = True
 ) -> int:
     """
-    Run the Ripples test suites and return the number of failing checks.
+    Run the Ripples test suites and return the number of failing tests.
 
     This is the unified entry point referenced throughout the documentation.
     It runs the installation-integrity checks defined in this module, a single
     submodule suite, or every suite at once, and returns the total failure
-    count so the result reads as a truthiness gate: ``0`` means everything
-    passed.
+    count.
 
     Parameters
     ----------
     which : 'installation', 'differentiation', 'optimization' or 'all', \
     default 'all'
-        Which suite to run. Accepted (case-insensitive) targets:
+        Which suite to run. Options:
 
-        - ``'installation'`` - the integrity checks in this module only.
-        - ``'differentiation'`` - the differentiation suite only.
-        - ``'optimization'`` - the optimization suite only.
-        - ``'all'`` - the installation checks followed by both submodule
-          suites, with a combined summary printed at the end.
+        - `'installation'` - the integrity checks in this module only.
+        - `'differentiation'` - the differentiation suite only.
+        - `'optimization'` - the optimization suite only.
+        - `'all'` - the installation checks followed by both submodule
+        suites, with a combined summary printed at the end.
 
-        Common alternative spellings (``'install'``, ``'diff'``, ``'opt'``,
-        ``'everything'``, ...) are accepted as well.
+        Common alternative spellings (`'install'`, `'diff'`, `'opt'`,
+        `'everything'`, ...) are accepted as well.
     include_benchmarks : bool, default True
-        Forwarded unchanged to each submodule suite, where it toggles the
+        Include the benchmarks of each submodule suite, where it toggles the
         timing-only sections. The installation suite has no benchmarks, so the
-        flag does not affect that part of an ``'all'`` run.
+        flag does not affect that part of an `'all'` run.
+    verbose : bool, default True
+        When True every test prints its header, RESULT and VERDICT as it
+        runs. When False the suites run in quiet mode: passing and skipped
+        tests are suppressed and only failing tests reach stdout. In an
+        `'all'` run the per-suite summaries are suppressed too, leaving
+        just the failing tests and the single combined summary; a single-
+        suite run keeps that suite's own summary, since there is no
+        combined table to stand in for it.
 
     Returns
     -------
@@ -1410,14 +1614,16 @@ def test(
     canonical_target = _canonical_target(which)
 
     if canonical_target == "installation":
-        return run(include_benchmarks=include_benchmarks).failed
+        return run(
+            include_benchmarks=include_benchmarks, verbose=verbose
+        ).failed
 
     if canonical_target == "differentiation":
         differentiation_tests = importlib.import_module(
             "ripples.differentiation._test"
         )
         return differentiation_tests.run(
-            include_benchmarks=include_benchmarks
+            include_benchmarks=include_benchmarks, verbose=verbose
         ).failed
 
     if canonical_target == "optimization":
@@ -1425,7 +1631,7 @@ def test(
             "ripples.optimization._test"
         )
         return optimization_tests.run(
-            include_benchmarks=include_benchmarks
+            include_benchmarks=include_benchmarks, verbose=verbose
         ).failed
 
     # canonical_target == "all": run each suite in turn, then combine.
@@ -1436,19 +1642,37 @@ def test(
         "ripples.optimization._test"
     )
 
+    # In quiet mode the combined summary below stands in for the per-suite
+    # ones, so each suite is told not to print its own; in verbose mode the
+    # per-suite summaries are kept for full detail.
+    per_suite_summary = verbose
+
     named_reporters: List[Tuple[str, Reporter]] = [
-        ("installation", run(include_benchmarks=include_benchmarks)),
+        (
+            "installation",
+            run(
+                include_benchmarks=include_benchmarks, verbose=verbose,
+                show_summary=per_suite_summary, quiet_label="installation",
+            ),
+        ),
         (
             "differentiation",
-            differentiation_tests.run(include_benchmarks=include_benchmarks),
+            differentiation_tests.run(
+                include_benchmarks=include_benchmarks, verbose=verbose,
+                show_summary=per_suite_summary, quiet_label="differentiation",
+            ),
         ),
         (
             "optimization",
-            optimization_tests.run(include_benchmarks=include_benchmarks),
+            optimization_tests.run(
+                include_benchmarks=include_benchmarks, verbose=verbose,
+                show_summary=per_suite_summary, quiet_label="optimization",
+            ),
         ),
     ]
 
     _print_combined_summary(named_reporters)
+
     return sum(suite_reporter.failed for _, suite_reporter in named_reporters)
 
 
@@ -1460,23 +1684,33 @@ def main(argv: Optional[List[str]] = None) -> int:
     By default it runs the installation-integrity suite alone. With ``--all``
     it chains the two submodule suites after it and prints a combined summary;
     with ``--no-benchmarks`` it forwards `include_benchmarks=False` to whatever
-    it runs. Returns the number of failures so the process exit code is 0 on a
-    clean run and non-zero otherwise - the convention continuous-integration
-    systems read.
+    it runs. With ``--quiet`` it runs in quiet mode, printing only
+    failing tests and the final summary. Returns the number of failures so the
+    process exit code is 0 on a clean run and non-zero otherwise - the
+    convention continuous-integration systems read.
 
     The CLI dispatches through `ripples.test` rather than the local `test`
     defined below, because `python -m ripples._test` loads this source file
     twice (once as `ripples._test` during the package import, once again as
     `__main__` for the CLI run) and the two copies hold separate function
     objects; going through the package attribute ensures the identity check
-    in Section E resolves to the same `test` object regardless of how the
+    in Section 5 resolves to the same `test` object regardless of how the
     suite was launched.
     """
     arguments = sys.argv[1:] if argv is None else argv
+
     include_benchmarks = "--no-benchmarks" not in arguments
+
+    verbose = "--quiet" not in arguments
+
     target = "all" if "--all" in arguments else "installation"
+
     import ripples
-    return ripples.test(which=target, include_benchmarks=include_benchmarks)
+
+    return ripples.test(
+        which=target, include_benchmarks=include_benchmarks,
+        verbose=verbose,
+    )
 
 
 
@@ -1493,12 +1727,8 @@ def main(argv: Optional[List[str]] = None) -> int:
 def test_installation_suite() -> None:
     """Fail under pytest if any installation-integrity check fails."""
     reporter = run(include_benchmarks=False)
+
     assert reporter.failed == 0, (
         f"{reporter.failed} installation check(s) failed; "
         f"see the printed report for the what / why of each."
     )
-
-
-
-if __name__ == "__main__":
-    sys.exit(main())

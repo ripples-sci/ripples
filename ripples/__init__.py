@@ -228,9 +228,11 @@ _submodules = (
 )
 
 _public_functions = (
+    # Differentiation
     'nth_numerical_derivative',
     'numerical_hessian_vector_product',
     'DifferentiationResult',
+    # Optimization
     'minimizer',
     'OptimizationResult',
 )

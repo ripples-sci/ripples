@@ -1790,9 +1790,11 @@ def minimizer(
         def inner_solver(function, parameters, gradient):
             return minimizer(
                 function=function,
-                initial_params=np.atleast_1d(
-                    np.asarray(parameters, dtype=float)
-                ).copy(),
+                initial_params=(
+                    np.atleast_1d(np.asarray(parameters, dtype=float)).copy()
+                    if method not in METHODS_THAT_REQUIRE_BOUNDS
+                    else None
+                ),
                 method=method,
                 method_params=final_method_params,
                 gradient_function=(
@@ -1801,8 +1803,8 @@ def minimizer(
                 ),
                 gradient_point_number=gradient_point_number,
                 # The inner solver minimises the augmented Lagrangian, not
-                # the user's original f. So, let the inner minimizer build
-                # numerical Hessians of the Lagrangian fucntion directly.
+                # the user's original function. So, let the inner minimizer
+                # build numerical Hessians of the Lagrangian function directly.
                 hessian_function=None,
                 hessian_vector_function=None,
                 max_iters=_max_iters,
