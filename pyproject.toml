@@ -110,7 +110,7 @@ dependencies = [
 # Dependencies for running the test suite locally and in CI.
 test = [
     "pytest>=7.0",
-    "pytest-cov>=4.0",
+    "pytest-cov>=7.1.0",
     "pytest-xdist>=3.0",
     "hypothesis>=6.0",
 ]
