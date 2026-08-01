@@ -125,7 +125,7 @@ lint = [
 # Dependencies for building and uploading the distribution to PyPI.
 build = [
     "build>=1.0",
-    "twine>=5.0",
+    "twine>=7.0.0",
 ]
 
 
